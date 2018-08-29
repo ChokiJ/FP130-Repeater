@@ -5,7 +5,7 @@
   "ret": 1, // 返回码，固定为1
   "apiver": 9, // Api版本，本SDK为9
   "name": "FP130-复读鸡", // 应用名称
-  "version": "1.0", // 应用版本
+  "version": "1.1", // 应用版本
   "version_id": 1, // 应用顺序版本（每次发布时至少+1）
   "author": "Choki", // 应用作者
   "description": "弗尔帕斯塔原型CXXX-拥有复读程度的能力的机器人",
@@ -137,7 +137,7 @@
         //131,  //取陌生人信息		getStrangerInfo
         //140,  //置讨论组退出		setDiscussLeave
         150,  //置好友添加请求		setFriendAddRequest
-        151,  //置群添加请求		setGroupAddRequest
+        151  //置群添加请求		setGroupAddRequest
         //160,  //取群成员列表		getGroupMemberList
         //161,  //取群列表			getGroupList
         //180   //撤回消息			deleteMsg

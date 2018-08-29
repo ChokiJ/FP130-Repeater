@@ -9,12 +9,23 @@
 #include "cqp.h"
 #include "appmain.h" //应用AppID等信息，请正确填写，否则酷Q可能无法加载
 #include "time.h"
+#include "map"
 
 using namespace std;
 string lastmsg;
 string lastmsg2;
 string lastmsg3;
 string lastrpt;
+bool enablefollow = true;
+bool enablerandom = true;
+int chance = 1;
+map<int64_t, bool> follow;
+map<int64_t, bool> random;
+int msgcount = 0;
+string msgs[4];
+int64_t groups[4];
+
+
 
 int ac = -1; //AuthCode 调用酷Q的方法时需要用到
 bool enabled = false;
@@ -105,12 +116,60 @@ void Delay(int msec)
 CQEVENT(int32_t, __eventGroupMsg, 36)(int32_t subType, int32_t msgId, int64_t fromGroup, int64_t fromQQ, const char *fromAnonymous, const char *msg, int32_t font) {
 	int RandomNumber;
 	int waittime;
+	if (msgcount == 4)
+	{
+		msgcount = 0;
+	}
+	//控制单群复读开关
+	if (strcmp(msg,"/randomr") == 0)
+	{
+		CQ_addLog(ac, 0, CQLOG_DEBUG, "指令：/randomr");
+		if (random[fromGroup])
+		{ 
+			CQ_sendGroupMsg(ac, fromGroup, "本群随机复读已开启。");
+			random[fromGroup] = false;
+		}
+		else
+		{
+			CQ_sendGroupMsg(ac, fromGroup, "本群随机复读已关闭。");
+			random[fromGroup] = true;
+		}
+		return EVENT_BLOCK; 
+	}	
+	if (strcmp(msg,"/followr") == 0)
+	{
+		CQ_addLog(ac, 0, CQLOG_DEBUG, "指令：/followr");
+		if (follow[fromGroup])
+		{
+			CQ_sendGroupMsg(ac, fromGroup, "本群跟随复读已开启。");
+			follow[fromGroup] = false;
+		}
+		else
+		{
+			CQ_sendGroupMsg(ac, fromGroup, "本群跟随复读已关闭。");
+			follow[fromGroup] = true;
+		}
+		return EVENT_BLOCK;
+	}
 	srand((unsigned)time(NULL));//随机种子
 	RandomNumber = rand() % 100 + 1;//生成1~100随机数
 	waittime = rand() % 2000 + 200;//延时时间
-	if (lastmsg3 == msg || lastmsg2 == msg || lastmsg == msg) //是否已经出现了复读并且自己还没复读
+	int c = 0;
+	string str;
+	str = msg;
+	for (int i = 0;i <= 4;i++)
 	{
-		if (msg != lastrpt) 
+		if (msgs[i] == str)
+		{
+			if (groups[i] == fromGroup)
+			{
+				c++;
+			}
+		}
+	}
+	if (c >= 2)
+	{
+		if (msg != lastrpt && follow[fromGroup] == false)
 		{			
 			Delay(waittime);
 			CQ_addLog(ac,0, CQLOG_DEBUG, "跟随复读");
@@ -119,7 +178,7 @@ CQEVENT(int32_t, __eventGroupMsg, 36)(int32_t subType, int32_t msgId, int64_t fr
 			return EVENT_BLOCK;			
 		}
 	}
-	if (RandomNumber >= 98) {
+	if (RandomNumber >= (100 - chance) && random[fromGroup] == false) {
 		CQ_addLog(ac, 0, CQLOG_DEBUG, "触发复读");
 		Delay(waittime);
 		CQ_sendGroupMsg(ac, fromGroup, msg);
@@ -129,14 +188,13 @@ CQEVENT(int32_t, __eventGroupMsg, 36)(int32_t subType, int32_t msgId, int64_t fr
 	else
 	{
 		CQ_addLog(ac,0, CQLOG_DEBUG, "没有复读");
-		CQ_addLog(ac, 0, CQLOG_DEBUG, lastmsg.c_str());
-		CQ_addLog(ac, 0, CQLOG_DEBUG, lastmsg2.c_str());
-		CQ_addLog(ac, 0, CQLOG_DEBUG, lastmsg3.c_str());
-		CQ_addLog(ac, 0, CQLOG_DEBUG, lastrpt.c_str());
-		CQ_addLog(ac, 0, CQLOG_DEBUG, msg);
-		lastmsg3 = lastmsg2;
-		lastmsg2 = lastmsg;
-		lastmsg = msg;//记录上次的消息
+		const char * dbg = strdup(msgs[msgcount-1].c_str());
+		CQ_addLog(ac, 0, CQLOG_DEBUG, dbg);
+		msgs[msgcount] = msg;
+		groups[msgcount] = fromGroup;
+		dbg = strdup(msgs[msgcount].c_str());		
+		CQ_addLog(ac, 0, CQLOG_DEBUG, dbg);
+		msgcount++;
 		return EVENT_IGNORE;
 	}
 }
